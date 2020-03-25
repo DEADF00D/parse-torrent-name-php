@@ -1,7 +1,7 @@
 # parse-torrent-name-php
-Extract media information from torrent-like filename
+Extract media information from torrent-like filename.
 
-This is a fork / port of the awesome libraries from [jzjzjzj](https://github.com/jzjzjzj/parse-torrent-name) and [divijbindlish](https://github.com/divijbindlish/parse-torrent-name)
+This is a fork / port of the awesome libraries from [jzjzjzj](https://github.com/jzjzjzj/parse-torrent-name) and [divijbindlish](https://github.com/divijbindlish/parse-torrent-name).
 
 Extract primary informations from a torrent downloaded filename into an information array.
 This fork only support the extraction of few tokens, like the `title`, the `year`, `container`, `resolution`.
