@@ -3,6 +3,16 @@ class PTN{
     public function _escape_regex($string){
         return preg_replace('/[\-\[\]{}()*+?.,\\\^$|#\s]/', '\\$&', $string);
     }
+
+    /*
+    For retro-compatibility on php version < 8.0
+    From https://stackoverflow.com/a/834355
+    */
+    public function str_starts_with($haystack, $needle){
+        $length = strlen( $needle );
+        return substr( $haystack, 0, $length ) === $needle;
+    }
+
     public function __construct(){
         $this->torrent = null;
         $this->excess_raw = null;
@@ -15,7 +25,8 @@ class PTN{
         $this->patterns = [
             'season' => '(s?([0-9]{1,2}))[ex]',
             'episode' => '([ex]([0-9]{2})(?:[^0-9]|$))',
-            'year' => '([\[\(]?((?:19[0-9]|20[01])[0-9])[\]\)]?)',
+            // 'year' => '([\[\(]?((?:19[0-9]|20[0-9])[0-9])[\]\)]?)',
+            'year' => '([\[\(]?((?:19[0-9]|20[0-9])[0-9])[\]\)]?)',
             'resolution' => '([0-9]{3,4}p)',
             'quality' => '((?:PPV\.)?[HP]DTV|(?:HD)?CAM|B[DR]Rip|(?:HD-?)?TS|(?:PPV )?WEB-?DL(?: DVDRip)?|HDRip|DVDRip|DVDRIP|CamRip|W[EB]BRip|BluRay|DvDScr|hdtv|telesync)',
             'codec' => '(xvid|[hx]\.?26[45])',
@@ -92,7 +103,7 @@ class PTN{
         $this->title_raw = null;
 
         foreach($this->patterns as $key => $pattern){
-            if(!in_array($key, ['season', 'episode', 'website'])){
+            if(!in_array($key, ['season', 'episode', 'website', 'year'])){
                 $pattern = '\\b'.$pattern.'\\b';
             }
 
@@ -111,6 +122,23 @@ class PTN{
             }
 
             $index=[];
+            if($key === 'year' && count($match)>1){
+                $nmatch = [];
+                foreach($match as $m){
+                    if($this->str_starts_with($m[0], '(')){
+                        array_push($nmatch, $m);
+                    }
+                }
+
+                if($nmatch){
+                    $match = $nmatch;
+                }
+            }
+
+            if(gettype($match[0]) == "array"){
+                $match = (array)$match[0];
+            }
+
             if(count($match)>1){
                 $index['raw'] = 0;
                 $index['clean'] = 1;
@@ -124,6 +152,9 @@ class PTN{
             }else{
                 $clean = $match[$index['clean']];
                 if (in_array($key, array_keys($this->types)) && $this->types[$key]=='integer'){
+                    if($key == 'year' && $this->str_starts_with($clean, '(')){  //   Quick fix for the paranthesis problem due to intval("(1234)") return 0.
+                         $clean = substr($clean, 1, -1);
+                    }
                     $clean = intval($clean);
                 }
             }
@@ -141,6 +172,7 @@ class PTN{
                 $sub_pattern = $this->_escape_regex($match[$index['raw']]);
                 $this->torrent['map']=preg_replace($sub_pattern, '{episode}', $this->torrent['name']);
             }
+
             $this->_part($key, $match, $match[$index['raw']], $clean);
         }
 
